@@ -12,10 +12,6 @@ const collectionSchema = new Mongoose.Schema({
         default: '',
         maxlength: 140,
     },
-    contentType: {
-        type: String,
-        required: true,
-    },
     list: [{
         title: {
             type: String,
@@ -26,9 +22,13 @@ const collectionSchema = new Mongoose.Schema({
             type: Number,
             default: null,
         },
-        poster: String,
+        contentType: {
+            type: String,
+            required: true,
+        },
+        image: String,
         author: String,
-        year: Number,
+        published: String,
     }],
     private: {
         type: Boolean,

@@ -14,7 +14,7 @@ exports.createCollection = async req => {
         const collection = new Collection(req);
         const newCollection = await collection.save();
         let updateUserCollectionsType = {
-            [req.contentType == 'custom' ? '$push' : '$set']: {
+            $push: {
                 ['collections.' + req.contentType]: newCollection._id }
             };
     
@@ -25,9 +25,40 @@ exports.createCollection = async req => {
     }
 };
 
-exports.updateCollection = async req => {
+exports.updateCollection = async req => { // add details
     try {
         return await Collection.findByIdAndUpdate(req.params.id, req.params);
+    } catch (error) {
+        console.log(error);
+    }
+};
+
+exports.addTitle = async req => {
+    try {
+        await Collection.findByIdAndUpdate(req._id, {
+            $push: { list: req.title }
+        });
+
+        return req.title;
+
+    } catch (error) {
+        console.log(error);
+    }
+};
+
+exports.updateTitle = async req => {
+    try {
+        const collection = await Collection.findOneAndUpdate(
+            {
+                _id: req._idCollection,
+                list: req._idTitle
+            },
+            {
+                $set: { "list.$": req.title }
+        });
+        console.log(collection)
+        return req.title;
+
     } catch (error) {
         console.log(error);
     }

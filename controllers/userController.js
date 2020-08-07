@@ -36,6 +36,12 @@ exports.getUser = async req => {
 
 exports.addUser = async req => {
     try { 
+        const ifEmailExists = await User.findOne({ email: req.email });
+        const ifUserExists = await User.findOne({ name: req.name });
+
+        if (ifEmailExists || ifUserExists) // TODO: заменить на две независимые проверки
+            return null;
+
         const user = new User(req);
         const newUser = await user.save();
         return newUser;
@@ -44,10 +50,33 @@ exports.addUser = async req => {
     }
 };
 
-exports.updateUser = async req => {
+exports.updateUser = async (req, _id) => {
+    console.log(req)
     try {
-        return await User.findOneAndUpdate({name: req.name}, req.params);
+        if (req.passwordNew) {
+            const user = await User.findById(_id); // TODO: throw specific error
+
+            if (user.password != req.password)
+                return null;
+        }
+
+        if (req.passwordNew) {
+            req.password = req.passwordNew;
+            delete req.passwordNew;
+        }
+
+        return await User.findByIdAndUpdate(_id, req);
     } catch (error) {
         console.log(error);
+    }
+};
+
+exports.resetAuth = async req => {
+    try {
+        await User.findByIdAndUpdate(req._id, { $inc: { count: 1 } });
+        return true
+    } catch (error) {
+        console.log(error);
+        return false;
     }
 };

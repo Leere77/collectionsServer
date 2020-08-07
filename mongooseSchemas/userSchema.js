@@ -25,19 +25,7 @@ const userSchema = new Mongoose.Schema({
         default: 0
     },
     collections: {
-        book: {
-            type: Mongoose.ObjectId,
-            default: null,
-        },
-        movie: {
-            type: Mongoose.ObjectId,
-            default: null,
-        },
-        series: {
-            type: Mongoose.ObjectId,
-            default: null,
-        },
-        custom: {
+        own: {
             type: [Mongoose.ObjectId],
             default: [],
         },
