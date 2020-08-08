@@ -1,3 +1,9 @@
+/*
+ TODO:
+    Разделить query и mutations 
+    Тесты
+*/
+
 const { GraphQLSchema,
 	GraphQLObjectType,
 	GraphQLString,
@@ -13,20 +19,24 @@ const userController = require('../controllers/userController');
 const collectionController = require('../controllers/collectionController');
 const titleController = require('../controllers/titleController');
 
-const collectionsType = new GraphQLObjectType({
-    name: 'Collections',
-    fields: () => ({
-        own: { type: new GraphQLList(GraphQLID) },
-        bookmarks: { type: new GraphQLList(GraphQLID) }
-    })
-});
 
 const userType = new GraphQLObjectType({
     name: 'User',
     fields: () => ({
         _id: { type: GraphQLID },
         name: { type: GraphQLString },
-        collections: { type: collectionsType },
+        collections: { 
+            type: new GraphQLList(collectionType),
+            async resolve(parent, args, req) {
+                return await userController.getCollections(parent, req._id)
+            }
+        },
+        bookmarks: { 
+            type: new GraphQLList(collectionType),
+            async resolve(parent, args, req) {
+                return await userController.getBookmarks(parent, req._id)
+            }
+        },
         links: { type: new GraphQLList(GraphQLString) }
     })
 });
@@ -59,11 +69,11 @@ const titleType = new GraphQLObjectType(title);
 const collectionType = new GraphQLObjectType({
     name: 'Collection',
     fields: () => ({
+        _id: { type: GraphQLID },
         name: { type: GraphQLString },
         description: { type: GraphQLString },
         list: { type: new GraphQLList(titleType)},
         private: { type: GraphQLBoolean },
-        anonymous: { type: GraphQLBoolean },
         ratedBy: { type: new GraphQLList(GraphQLID) },
         owner: { type: GraphQLID }
     })
@@ -89,11 +99,11 @@ const RootQuery = new GraphQLObjectType({
                 return user;
             }
         },
-        collection: {
+        getCollection: {
             type: collectionType,
-            args: { name: { type: GraphQLID }},
-            async resolve(_, args) {
-                return await collectionController.getCollection(args);
+            args: { _id: { type: GraphQLID }},
+            async resolve(_, args, req) {
+                return await collectionController.getCollection(args, req._id);
             }
         },
         fetchTitle: {
@@ -141,20 +151,72 @@ const Mutations = new GraphQLObjectType({
                 return await userController.updateUser(args, req._id);
             }
         },
+        addBookmark: {
+            type: GraphQLBoolean,
+            args: { 
+                _id: { type: GraphQLID }
+            },
+            async resolve(_, args, req) {
+                if (!req._id)  
+                    return null;
+                
+                return await collectionController.addBookmark(args, req._id);
+            }
+        },
+        removeBookmark: {
+            type: GraphQLBoolean,
+            args: { 
+                _id: { type: GraphQLID }
+            },
+            async resolve(_, args, req) {
+                if (!req._id)  
+                    return null;
+                
+                return await collectionController.removeBookmark(args, req._id);
+            }
+        },
         addCollection: {
             type: collectionType,
             args: {
                 name: { type: new GraphQLNonNull(GraphQLString) },
                 description: { type: GraphQLString },
-                private: { type: GraphQLString },
-                anonymous: { type: GraphQLString },
-                owner: { type: GraphQLID },
+                private: { type: GraphQLString }
             },
-            async resolve(_, args) {
-                return await collectionController.createCollection(args);
+            async resolve(_, args, req) {
+                // if (!req._id)  
+                //     return null;
+
+                return await collectionController.addCollection(args, req._id);
             }
         },
-        addTitle: { // remove
+        updateCollection: {
+            type: collectionType,
+            args: {
+                _id: { type: GraphQLID },
+                name: { type: new GraphQLNonNull(GraphQLString) },
+                description: { type: GraphQLString },
+                private: { type: GraphQLString }
+            },
+            async resolve(_, args, req) {
+                // if (!req._id)  
+                //     return null;
+
+                return collectionController.updateCollection(args, req._id);
+            }
+        },
+        removeCollection: {
+            type: GraphQLBoolean,
+            args: {
+                _id: { type: GraphQLID },
+            },
+            async resolve(_, args, req) {
+                // if (!req._id)  
+                //     return null;
+
+                return collectionController.removeCollection(args, req._id);
+            }
+        },
+        addTitle: { 
             type: titleType,
             args: {
                 _id: { type: GraphQLID },
@@ -164,7 +226,34 @@ const Mutations = new GraphQLObjectType({
                 // if (!req._id)  
                 //     return null;
 
-                return await collectionController.addTitle(args);
+                return await collectionController.addTitle(args, req._id);
+            }
+        },
+        // updateTitle: { 
+        //     type: titleType,
+        //     args: {
+        //         _idTitle: { type: GraphQLID },
+        //         _idCollection: { type: GraphQLID },
+        //         title: { type: titleInput }
+        //     },
+        //     async resolve(_, args, req) {
+        //         // if (!req._id)  
+        //         //     return null;
+
+        //         return await collectionController.updateTitle(args);
+        //     }
+        // },
+        deleteTitle: { 
+            type: titleType,
+            args: {
+                _idTitle: { type: GraphQLID },
+                _idCollection: { type: GraphQLID }
+            },
+            async resolve(_, args, req) {
+                // if (!req._id)  
+                //     return null;
+
+                return await collectionController.deleteTitle(args);
             }
         },
         login: {
@@ -183,7 +272,7 @@ const Mutations = new GraphQLObjectType({
                 if (!res._id)
                     return null;
     
-                return null;
+                return userController.resetAuth(res._id);
             }
         }
     }

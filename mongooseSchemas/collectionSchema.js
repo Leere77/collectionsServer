@@ -34,16 +34,12 @@ const collectionSchema = new Mongoose.Schema({
         type: Boolean,
         default: false,
     },
-    anonymous: {
-        type: Boolean,
-        default: false,
-    },
     ratedBy: [{
         type: Mongoose.ObjectId,
         default: null
     }],
     owner: {
-        type: String,
+        type: Mongoose.ObjectId,
         required: true
     }
 });

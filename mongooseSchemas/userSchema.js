@@ -21,18 +21,15 @@ const userSchema = new Mongoose.Schema({
     },
     count: {
         type: Number,
-        required: true,
         default: 0
     },
     collections: {
-        own: {
-            type: [Mongoose.ObjectId],
-            default: [],
-        },
-        bookmarks: {
-            type: [Mongoose.ObjectId],
-            default: [],
-        },
+        type: [Mongoose.ObjectId],
+        default: []
+    },
+    bookmarks: {
+        type: [Mongoose.ObjectId],
+        default: []
     },
     links: {
         type: [{

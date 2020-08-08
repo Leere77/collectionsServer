@@ -1,4 +1,5 @@
 const User = require('../mongooseSchemas/userSchema');
+const Collection = require('../mongooseSchemas/collectionSchema');
 const { createTokens } = require('../auth');
 
 exports.validateUser = async (args, res) => {
@@ -18,7 +19,7 @@ exports.validateUser = async (args, res) => {
         res.cookie('access-token', accessToken);
         res.cookie('refresh-token', refreshToken);
 
-        return user
+        return user;
 
     } catch (error) {
         console.log(error);
@@ -27,7 +28,10 @@ exports.validateUser = async (args, res) => {
 
 exports.getUser = async req => {
     try {
-        const user = req._id ? await User.findById(req._id) : await User.findOne({name: req.name});
+        const user = req._id ? 
+            await User.findById(req._id) : 
+            await User.findOne({name: req.name});
+
         return user
     } catch (error) {
         console.log(error);
@@ -51,7 +55,6 @@ exports.addUser = async req => {
 };
 
 exports.updateUser = async (req, _id) => {
-    console.log(req)
     try {
         if (req.passwordNew) {
             const user = await User.findById(_id); // TODO: throw specific error
@@ -71,10 +74,38 @@ exports.updateUser = async (req, _id) => {
     }
 };
 
-exports.resetAuth = async req => {
+exports.getCollections = async (req, _id) => {
     try {
-        await User.findByIdAndUpdate(req._id, { $inc: { count: 1 } });
-        return true
+        let collections = await Collection.find({ owner: req._id }, {__v: 0});
+
+        if (_id != req._id)
+            collections = collections.filter(collection => collection.private);
+
+        return collections;
+    } catch (error) {
+        console.log(error);
+        return [];
+    }
+};
+
+exports.getBookmarks = async (req, _id) => {
+    try {
+        let collections = await Collection.find({ _id: {
+            $in: req.bookmarks
+        } }, {__v: 0});
+
+        return collections;
+    } catch (error) {
+        console.log(error);
+        return [];
+    }
+};
+
+
+exports.resetAuth = async _id => {
+    try {
+        await User.findByIdAndUpdate(_id, { $inc: { count: 1 } });
+        return true;
     } catch (error) {
         console.log(error);
         return false;

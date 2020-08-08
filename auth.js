@@ -5,8 +5,8 @@ const REFRESH_SECRET = '123';
 const ACCESS_SECRET = '1234';
 
 function createTokens({ _id, count }) {
-    const refreshToken = jwt.sign({ _id, count }, REFRESH_SECRET, { expiresIn: "10min" });
-    const accessToken = jwt.sign({ _id }, ACCESS_SECRET, { expiresIn: "5min" });
+    const refreshToken = jwt.sign({ _id, count }, REFRESH_SECRET, { expiresIn: "50min" });
+    const accessToken = jwt.sign({ _id }, ACCESS_SECRET, { expiresIn: "30min" });
 
     return { refreshToken, accessToken };
 };
