@@ -1,24 +1,22 @@
 const Collection = require('../mongooseSchemas/collectionSchema');
 const User = require('../mongooseSchemas/userSchema');
+const ContentError = require('../error');
+
+const generalErrorHandler = err => 
+    new Error(err instanceof ContentError ? 
+        err.message : 
+        'Internal error');
 
 exports.getCollection = async (req, _id) => {
     try {
         const collection = await Collection.findById(req._id);
 
-        // const user = await User.findOne({
-        //     _id: collection.owner, 
-        //     'collections.bookmarks': [req._id]
-        // });
-         
-        // collection.isInBookmarks = user ? true : false;
-
         if (collection.private && collection.owner != _id)
-            return null;
+            throw new ContentError('ACCESS_DENIED', 'Collection');
 
         return collection;
     } catch (error) {
-        console.log(error);
-        return null;
+        return generalErrorHandler(err);
     }
 };
 
@@ -30,12 +28,12 @@ exports.addCollection = async (req, owner) => {
             $push: {
                 collections: newCollection._id }
             };
-    
+
         await User.findByIdAndUpdate(owner, updateUserCollectionsType);
+        //revert changes if user wasn't found
         return newCollection;
     } catch (error) {
-        console.log(error);
-        return null;
+        return generalErrorHandler(err);
     }
 };
 
@@ -44,7 +42,7 @@ exports.updateCollection = async (req, _id) => { // add details
         const collection = Collection.findById(req._id);
 
         if (collection.owner != _id)
-            return null;
+            throw new ContentError('ACCESS_DENIED');
 
         const update = {...req};
         delete update._id;
@@ -53,8 +51,7 @@ exports.updateCollection = async (req, _id) => { // add details
 
         return updatedCollection;
     } catch (error) {
-        console.log(error);
-        return null;
+        return generalErrorHandler(err);
     }
 };
 
@@ -63,10 +60,10 @@ exports.removeCollection = async (req, _id) => { // add details
         const collection = Collection.findById(req._id);
 
         if (!collection)
-            return false;
+            throw new ContentError('COLLECTION_NOT_FOUND', 'Collection');
 
         if (collection.owner != _id)
-            return false;
+            throw new ContentError('ACCESS_DENIED', 'Collection');
 
         await User.findByIdAndUpdate(_id, {
             $pull: {
@@ -78,8 +75,7 @@ exports.removeCollection = async (req, _id) => { // add details
 
         return true;
     } catch (error) {
-        console.log(error);
-        return null;
+        return generalErrorHandler(err);
     }
 };
 
@@ -90,13 +86,12 @@ exports.addTitle = async req => {
         });
 
         if (!collection)
-            return null;
+            throw new ContentError('COLLECTION_NOT_FOUND', 'Collection');
 
         return req.title;
 
     } catch (error) {
-        console.log(error);
-        return null;
+        return generalErrorHandler(err);
     }
 };
 
@@ -141,8 +136,7 @@ exports.deleteTitle = async req => {
         return req.title;
 
     } catch (error) {
-        console.log(error);
-        return null;
+        return generalErrorHandler(err);
     }
 };
 
@@ -160,8 +154,7 @@ exports.addBookmark = async (req, _id) => {
         
         return false;
     } catch (error) {
-        console.log(error);
-        return null;
+        return generalErrorHandler(err);
     }
 };
 
@@ -179,7 +172,6 @@ exports.removeBookmark = async (req, _id) => {
         
         return false;
     } catch (error) {
-        console.log(error);
-        return null;
+        return generalErrorHandler(err);
     }
 };

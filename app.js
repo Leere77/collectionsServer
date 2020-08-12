@@ -7,8 +7,6 @@ const bodyParser = require('body-parser');
 const cookieParser = require('cookie-parser');
 const { graphqlHTTP } = require("express-graphql");
 
-const collectionsRouter = require('./routes/collections');
-const usersRouter = require('./routes/users');
 const schema = require("./qraphqlSchemas");
 const { authMiddleware } = require('./auth');
 
@@ -26,10 +24,6 @@ app.use(bodyParser.urlencoded({ extended: true }));
 mongoose.connect('mongodb://localhost:27017/project', { useNewUrlParser: true })
   .then(() => app.listen(3000, () => console.log(`listening at http://localhost:${3000}`)))
   .catch(error => { throw error });
-
-//app.use('/', indexRouter);
-app.use('/users', usersRouter);
-app.use('/collections', collectionsRouter);
 
 app.use(authMiddleware);
 

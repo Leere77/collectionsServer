@@ -1,13 +1,13 @@
 const fetch = require('node-fetch');
+const { parsed: { GOOGLE_API_KEY, OMDB_API_KEY } } = require('dotenv').config();
 
 exports.googleApi = async function googleApi(search) {
     const res = await fetch('https://www.googleapis.com/books/v1/volumes?q='
-        + encodeURI(search) + '&key=AIzaSyD9yAuJ81suWi1w_vkYBT9cPxFywpVeXGY');
-
+        + encodeURI(search) + '&key=' + GOOGLE_API_KEY);
     const body = await res.json();
 
     if (body.totalItems == 0)
-        return null;//{ error: "Book not found!" };
+        return [];
 
     return body.items.map(book => {
         const { volumeInfo: { 
@@ -29,13 +29,13 @@ exports.googleApi = async function googleApi(search) {
 }
 
 exports.imdbApi = async function imdbApi(search = '', type = '') {
-    const res = await fetch('http://www.omdbapi.com/?apikey=421d68d9&s='
+    const res = await fetch('http://www.omdbapi.com/?apikey=&s=' + OMDB_API_KEY
     + encodeURI(search) + '&type=' + type);
 
     const body = await res.json();
     
     if (body.Error)
-        return null;//{ error: "Nothing found!" };
+        return [];
     
     return body.Search.map(item => {
         const { 

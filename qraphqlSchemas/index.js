@@ -1,6 +1,6 @@
 /*
  TODO:
-    Разделить query и mutations 
+    Разделить type, query и mutations 
     Тесты
 */
 
@@ -18,6 +18,7 @@ const { GraphQLSchema,
 const userController = require('../controllers/userController');
 const collectionController = require('../controllers/collectionController');
 const titleController = require('../controllers/titleController');
+const ContentError = require('../error');
 
 
 const userType = new GraphQLObjectType({
@@ -42,7 +43,7 @@ const userType = new GraphQLObjectType({
 });
 
 const contentType = new GraphQLEnumType({
-    name: 'contentType',
+    name: 'ContentType',
     values: {
         book: { value: 'book' },
         movie: { value: 'movie' },
@@ -83,27 +84,42 @@ const RootQuery = new GraphQLObjectType({
     name: 'RootQueryType',
     fields: {
         me: {
-            type: userType,
+            type: userType,            
             async resolve(parent, args, req) {
-                if (!req._id)  
-                    return null;
-                
-                return await userController.getUser({ _id: req._id });
+                try {
+                    if (!req._id)  
+                        throw new ContentError('WRONG_CREDENTIALS', 'User');
+        
+                    return await userController.getUser({ _id: req._id });
+                } catch (err) {
+                    throw err;
+                }
             }
         },
         user: {
             type: userType,
-            args: { name: { type: GraphQLString }, _id: { type: GraphQLID }},
+            args: { 
+                name: { type: GraphQLString },
+                 _id: { type: GraphQLID }
+            },
             async resolve(_, args) {
-                let user = await userController.getUser(args);
-                return user;
+                try {
+                    let user = await userController.getUser(args);
+                    return user;
+                } catch (err) {
+                   throw err;
+                }
             }
         },
         getCollection: {
             type: collectionType,
             args: { _id: { type: GraphQLID }},
             async resolve(_, args, req) {
-                return await collectionController.getCollection(args, req._id);
+                try {
+                    return await collectionController.getCollection(args, req._id);
+                } catch (err) {
+                    throw err;
+                }
             }
         },
         fetchTitle: {
@@ -112,16 +128,23 @@ const RootQuery = new GraphQLObjectType({
                 search: { type: GraphQLString },
                 type: { type: contentType }
             },
-            async resolve(_, { search, type }) {
-                if (type == 'book')
-                    return await titleController.googleApi(search);
-                else
-                    return await titleController.imdbApi(search, type);
+            async resolve(_, { search, type }, req) {
+                try {
+                    if (!req._id)  
+                        throw new ContentError('WRONG_CREDENTIALS', 'User');
+    
+                    if (type == 'book')
+                        return await titleController.googleApi(search);
+                    else
+                        return await titleController.imdbApi(search, type);
+                } catch (err) {
+                    throw err;
+                }
             }
         }
     }
 });
-//resolvers as array
+
 const Mutations = new GraphQLObjectType({
     name: 'Mutations',
     fields: {
@@ -133,7 +156,11 @@ const Mutations = new GraphQLObjectType({
                 email: { type: new GraphQLNonNull(GraphQLString) },
             },
             async resolve(_, args) {
-                return await userController.addUser(args);
+                try {
+                    return await userController.addUser(args); 
+                } catch (err) {
+                    throw err;
+                }
             }
         },
         updateUser: {
@@ -145,10 +172,14 @@ const Mutations = new GraphQLObjectType({
                 passwordNew: { type: GraphQLString },
             },
             async resolve(_, args, req) {
-                if (!req._id)  
-                    return null;
+                try {
+                    if (!req._id)  
+                        throw new ContentError('WRONG_CREDENTIALS', 'User');
                 
-                return await userController.updateUser(args, req._id);
+                    return await userController.updateUser(args, req._id);
+                } catch (err) {
+                    throw err;
+                }
             }
         },
         addBookmark: {
@@ -157,10 +188,14 @@ const Mutations = new GraphQLObjectType({
                 _id: { type: GraphQLID }
             },
             async resolve(_, args, req) {
-                if (!req._id)  
-                    return null;
+                try {
+                    if (!req._id)  
+                        throw new ContentError('WRONG_CREDENTIALS', 'User');
                 
-                return await collectionController.addBookmark(args, req._id);
+                    return await collectionController.addBookmark(args, req._id);
+                } catch (err) {
+                    throw err;
+                }
             }
         },
         removeBookmark: {
@@ -169,10 +204,14 @@ const Mutations = new GraphQLObjectType({
                 _id: { type: GraphQLID }
             },
             async resolve(_, args, req) {
-                if (!req._id)  
-                    return null;
+                try {
+                    if (!req._id)  
+                        throw new ContentError('WRONG_CREDENTIALS', 'User');
                 
-                return await collectionController.removeBookmark(args, req._id);
+                    return await collectionController.removeBookmark(args, req._id);
+                } catch (err) {
+                    throw err;
+                }
             }
         },
         addCollection: {
@@ -183,10 +222,14 @@ const Mutations = new GraphQLObjectType({
                 private: { type: GraphQLString }
             },
             async resolve(_, args, req) {
-                // if (!req._id)  
-                //     return null;
-
-                return await collectionController.addCollection(args, req._id);
+                try {
+                    if (!req._id)  
+                        throw new ContentError('WRONG_CREDENTIALS', 'User');
+                
+                    return await collectionController.addCollection(args, req._id);
+                } catch (err) {
+                    throw err;
+                }
             }
         },
         updateCollection: {
@@ -198,10 +241,14 @@ const Mutations = new GraphQLObjectType({
                 private: { type: GraphQLString }
             },
             async resolve(_, args, req) {
-                // if (!req._id)  
-                //     return null;
-
-                return collectionController.updateCollection(args, req._id);
+                try {
+                    if (!req._id)  
+                        throw new ContentError('WRONG_CREDENTIALS', 'User');
+                
+                        return collectionController.updateCollection(args, req._id);
+                } catch (err) {
+                    throw err;
+                }
             }
         },
         removeCollection: {
@@ -210,10 +257,14 @@ const Mutations = new GraphQLObjectType({
                 _id: { type: GraphQLID },
             },
             async resolve(_, args, req) {
-                // if (!req._id)  
-                //     return null;
-
-                return collectionController.removeCollection(args, req._id);
+                try {
+                    if (!req._id)  
+                        throw new ContentError('WRONG_CREDENTIALS', 'User');
+                
+                        return collectionController.removeCollection(args, req._id);
+                } catch (err) {
+                    throw err;
+                }
             }
         },
         addTitle: { 
@@ -223,10 +274,14 @@ const Mutations = new GraphQLObjectType({
                 title: { type: titleInput }
             },
             async resolve(_, args, req) {
-                // if (!req._id)  
-                //     return null;
-
-                return await collectionController.addTitle(args, req._id);
+                try {
+                    if (!req._id)  
+                        throw new ContentError('WRONG_CREDENTIALS', 'User');
+                
+                    return await collectionController.addTitle(args, req._id);
+                } catch (err) {
+                    throw err;
+                }
             }
         },
         // updateTitle: { 
@@ -250,10 +305,14 @@ const Mutations = new GraphQLObjectType({
                 _idCollection: { type: GraphQLID }
             },
             async resolve(_, args, req) {
-                // if (!req._id)  
-                //     return null;
-
-                return await collectionController.deleteTitle(args);
+                try {
+                    if (!req._id)  
+                        throw new ContentError('WRONG_CREDENTIALS', 'User');
+                
+                        return await collectionController.deleteTitle(args);
+                } catch (err) {
+                    throw err;
+                }
             }
         },
         login: {
@@ -263,16 +322,24 @@ const Mutations = new GraphQLObjectType({
                 password: { type: new GraphQLNonNull(GraphQLString) },
             },
             async resolve(_, args, {res}) {
-                return await userController.validateUser(args, res);
+                try {
+                    return await userController.validateUser(args, res);
+                } catch (err) {
+                    throw err;
+                }
             }
         },
         resetAuth: {
             type: GraphQLBoolean,
             async resolve(_, args, res) {
-                if (!res._id)
-                    return null;
-    
-                return userController.resetAuth(res._id);
+                try {
+                    if (!req._id)  
+                        throw new ContentError('WRONG_CREDENTIALS', 'User');
+                
+                    return await userController.resetAuth(res._id);
+                } catch (err) {
+                    throw err;
+                }
             }
         }
     }

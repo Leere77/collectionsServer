@@ -1,18 +1,24 @@
 const User = require('../mongooseSchemas/userSchema');
 const Collection = require('../mongooseSchemas/collectionSchema');
 const { createTokens } = require('../auth');
+const ContentError = require('../error');
+
+const generalErrorHandler = err => 
+    new Error(err instanceof ContentError ? 
+        err.message : 
+        'Internal error');
 
 exports.validateUser = async (args, res) => {
     try {
         const user = await User.findOne({email: args.email});
 
         if (!user)
-            return user;
+            throw new ContentError('WRONG_CREDENTIALS', 'User');
 
         const { _id, password } = user;
 
         if (!_id || password != args.password) 
-            return null;
+            throw new ContentError('WRONG_CREDENTIALS');
 
         const { accessToken, refreshToken } = createTokens(user);
 
@@ -20,9 +26,8 @@ exports.validateUser = async (args, res) => {
         res.cookie('refresh-token', refreshToken);
 
         return user;
-
     } catch (error) {
-        console.log(error);
+        return generalErrorHandler(err);
     }
 };
 
@@ -31,36 +36,40 @@ exports.getUser = async req => {
         const user = req._id ? 
             await User.findById(req._id) : 
             await User.findOne({name: req.name});
+        
+        if (!user)
+            throw new ContentError('USER_NOT_FOUND', 'User');
 
         return user
-    } catch (error) {
-        console.log(error);
+    } catch (err) {
+        return generalErrorHandler(err);
     }
 };
 
 exports.addUser = async req => {
     try { 
-        const ifEmailExists = await User.findOne({ email: req.email });
-        const ifUserExists = await User.findOne({ name: req.name });
+        const emailExists = await User.findOne({ email: req.email });
+        const userExists = await User.findOne({ name: req.name });
 
-        if (ifEmailExists || ifUserExists) // TODO: заменить на две независимые проверки
-            return null;
+        if (emailExists) throw new ContentError('EMAIL_ALREADY_TAKEN');
+        if (userExists) throw new ContentError('USERNAME_ALREADY_TAKEN');
 
         const user = new User(req);
         const newUser = await user.save();
+
         return newUser;
     } catch (error) {
-        console.log(error);
+        return generalErrorHandler(err);
     }
 };
 
 exports.updateUser = async (req, _id) => {
     try {
         if (req.passwordNew) {
-            const user = await User.findById(_id); // TODO: throw specific error
+            const user = await User.findById(_id);
 
             if (user.password != req.password)
-                return null;
+                throw new ContentError('WRONG_CREDENTIALS');
         }
 
         if (req.passwordNew) {
@@ -70,7 +79,7 @@ exports.updateUser = async (req, _id) => {
 
         return await User.findByIdAndUpdate(_id, req);
     } catch (error) {
-        console.log(error);
+        return generalErrorHandler(err);
     }
 };
 
@@ -83,8 +92,7 @@ exports.getCollections = async (req, _id) => {
 
         return collections;
     } catch (error) {
-        console.log(error);
-        return [];
+        return generalErrorHandler(err);
     }
 };
 
@@ -96,8 +104,7 @@ exports.getBookmarks = async (req, _id) => {
 
         return collections;
     } catch (error) {
-        console.log(error);
-        return [];
+        return generalErrorHandler(err);
     }
 };
 
@@ -107,7 +114,6 @@ exports.resetAuth = async _id => {
         await User.findByIdAndUpdate(_id, { $inc: { count: 1 } });
         return true;
     } catch (error) {
-        console.log(error);
-        return false;
+        return generalErrorHandler(err);
     }
 };

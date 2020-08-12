@@ -1,8 +1,6 @@
 const jwt = require('jsonwebtoken');
 const User = require('./mongooseSchemas/userSchema');
-
-const REFRESH_SECRET = '123';
-const ACCESS_SECRET = '1234';
+const { parsed: { REFRESH_SECRET, ACCESS_SECRET } } = require('dotenv').config();
 
 function createTokens({ _id, count }) {
     const refreshToken = jwt.sign({ _id, count }, REFRESH_SECRET, { expiresIn: "50min" });
